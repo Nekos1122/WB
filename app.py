@@ -2,35 +2,30 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-st.title("Мини WB-дэшборд")
+st.title("Дэшборд Wildberries")
 
-# Загрузка файла
-wb_file = st.file_uploader("Загрузите отчёт Wildberries (.csv или .xlsx)")
+uploaded_file = st.file_uploader("Загрузите отчет (.csv или .xlsx)", type=["csv", "xlsx"])
 
-if wb_file is not None:
-    if wb_file.name.endswith(".csv"):
-        df = pd.read_csv(wb_file, sep=';', encoding='utf-8')
-    elif wb_file.name.endswith(('.xls', '.xlsx')):
-        df = pd.read_excel(wb_file)
+if uploaded_file is not None:
+    # Определяем тип файла и читаем его
+    if uploaded_file.name.endswith('.csv'):
+        df = pd.read_csv(uploaded_file)
     else:
-        st.warning("Формат не поддерживается.")
-        st.stop()
-    st.success("Данные успешно загружены!")
-    st.dataframe(df.head())
+        df = pd.read_excel(uploaded_file)
 
-    # Простейшие показатели
-    if "Кол-во" in df.columns:
-        st.metric("Общее количество", int(df["Кол-во"].sum()))
-    if "Сумма" in df.columns:
-        st.metric("Общая сумма", float(df["Сумма"].sum()))
+    st.success('Данные успешно загружены!')
+    st.dataframe(df)  # Покажет таблицу полностью
 
-    # Пример графика
-    if "Дата" in df.columns and "Сумма" in df.columns:
-        df['Дата'] = pd.to_datetime(df['Дата'], errors='coerce')
-        df2 = df.groupby('Дата')["Сумма"].sum().reset_index()
-        plt.plot(df2['Дата'], df2['Сумма'])
-        plt.xlabel('Дата')
-        plt.ylabel('Сумма продаж')
-        st.pyplot(plt)
+    # Пусть в отчёте есть столбцы “Дата” и “Сумма продаж”
+    if 'Дата' in df.columns and 'Сумма продаж' in df.columns:
+        sales_by_date = df.groupby('Дата')['Сумма продаж'].sum().reset_index()
+        # Построим график!
+        fig, ax = plt.subplots(figsize=(10,5))
+        ax.plot(sales_by_date['Дата'], sales_by_date['Сумма продаж'])
+        plt.xticks(rotation=45)
+        st.pyplot(fig)
+    else:
+        st.warning('В вашем файле не найдено нужных столбцов "Дата" и "Сумма продаж".')
+
 else:
-    st.info("Пожалуйста, загрузите файл для анализа!")
+    st.info('Пожалуйста, загрузите файл для анализа.')
